@@ -5,6 +5,11 @@
      - improved handling of sliproads (emit turns instead of 'take the ramp')
        BREAKING: modifies the file format with new internal identifiers
 
+   - API:
+     - Support for destination signs. New member `destinations` in `RouteStep`, based on `destination` and `destination:ref`.
+   - Profile changes:
+     - `result.destinations` allows you to set a way's destinations
+
 # 5.2.0 RC1
    Changes from 5.1.0
 

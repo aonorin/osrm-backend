@@ -7,8 +7,8 @@
 #include "util/for_each_pair.hpp"
 #include "util/simple_logger.hpp"
 
-#include <boost/optional/optional.hpp>
 #include "extractor/extractor_callbacks.hpp"
+#include <boost/optional/optional.hpp>
 
 #include <osmium/osm.hpp>
 
@@ -152,6 +152,12 @@ void ExtractorCallbacks::ProcessWay(const osmium::Way &input_way, const Extracti
 
         external_memory.name_char_data.reserve(name_id + name_length);
         std::copy(parsed_way.name.c_str(), parsed_way.name.c_str() + name_length,
+                  std::back_inserter(external_memory.name_char_data));
+
+        auto destinations_length =
+            std::min<unsigned>(MAX_STRING_LENGTH, parsed_way.destinations.size());
+        std::copy(parsed_way.destinations.c_str(),
+                  parsed_way.destinations.c_str() + destinations_length,
                   std::back_inserter(external_memory.name_char_data));
 
         external_memory.name_lengths.push_back(name_length);
