@@ -126,7 +126,7 @@ Feature: Turn Lane Guidance
             | fg    | road  | left;through\|through&  | yes    |
             | gh    | road  |                         | yes    |
             | ig    | cross |                         | yes    |
-            | gb    | cross | through\|left           | yes    |
+            | gb    | cross | left\|through           | yes    |
             | bj    | cross |                         | yes    |
             | kc    | cross | left\|through;right     | yes    |
             | cf    | cross | left\|through           | yes    |

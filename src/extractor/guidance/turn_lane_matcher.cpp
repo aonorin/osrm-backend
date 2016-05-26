@@ -702,10 +702,10 @@ Intersection TurnLaneMatcher::simpleMatchTuplesToTurns(Intersection intersection
             if (TurnType::Suppressed == intersection[road_index].turn.instruction.type &&
                 !uses_all_lanes)
                 intersection[road_index].turn.instruction.type = TurnType::UseLane;
-            BOOST_ASSERT(detail::findBestMatch(lane_data[valid_turn].tag, intersection) ==
-                         intersection.begin() + road_index);
             std::cout << "Assigned: " << lane_data[valid_turn].tag << " to "
                       << toString(intersection[road_index]) << std::endl;
+            BOOST_ASSERT(detail::findBestMatch(lane_data[valid_turn].tag, intersection) ==
+                         intersection.begin() + road_index);
             ++valid_turn;
         }
     }
