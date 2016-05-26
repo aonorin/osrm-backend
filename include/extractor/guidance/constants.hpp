@@ -25,7 +25,7 @@ const double constexpr MAX_ROUNDABOUT_INTERSECTION_RADIUS = 5;
 const double constexpr MAX_ROUNDABOUT_RADIUS = 15; // 30 m diameter as final distinction
 const double constexpr INCREASES_BY_FOURTY_PERCENT = 1.4;
 
-const unsigned constexpr MAX_SLIPROAD_THRESHOLD = 250;
+const int constexpr MAX_SLIPROAD_THRESHOLD = 250;
 
 } // namespace guidance
 } // namespace extractor
