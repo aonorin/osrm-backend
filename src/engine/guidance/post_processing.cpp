@@ -331,7 +331,7 @@ RouteStep elongate(RouteStep step, const RouteStep &by_step)
 // a possible u-turn.
 bool collapsable(const RouteStep &step)
 {
-    const constexpr double MAX_COLLAPSE_DISTANCE = 25;
+    const constexpr double MAX_COLLAPSE_DISTANCE = 40;
     return step.distance < MAX_COLLAPSE_DISTANCE;
 }
 
@@ -354,9 +354,12 @@ void collapseTurnAt(std::vector<RouteStep> &steps,
     BOOST_ASSERT(!one_back_step.intersections.empty() && !current_step.intersections.empty());
     const auto isCollapsableInstruction = [](const TurnInstruction instruction) {
         return instruction.type == TurnType::NewName ||
+               instruction.type == TurnType::UseLane ||
                (instruction.type == TurnType::Turn &&
                 instruction.direction_modifier == DirectionModifier::Straight);
     };
+    std::cout << "At: " << step_index << std::endl;
+    print(steps);
     // Very Short New Name
     if (isCollapsableInstruction(one_back_step.maneuver.instruction))
     {
@@ -394,6 +397,7 @@ void collapseTurnAt(std::vector<RouteStep> &steps,
                                      .bearings[current_step.intersections.front().out]))
 
     {
+        print(steps);
         BOOST_ASSERT(two_back_index < steps.size());
         // the simple case is a u-turn that changes directly into the in-name again
         const bool direct_u_turn = steps[two_back_index].name == current_step.name;
@@ -578,8 +582,11 @@ std::vector<RouteStep> collapseTurns(std::vector<RouteStep> steps)
             invalidateStep(steps[1]);
         }
     }
+
+    //TODO needs to check whether lane data is required!
     const auto isCollapsableInstruction = [](const TurnInstruction instruction) {
         return instruction.type == TurnType::NewName ||
+                instruction.type == TurnType::UseLane ||
                (instruction.type == TurnType::Turn &&
                 instruction.direction_modifier == DirectionModifier::Straight);
     };
@@ -659,7 +666,6 @@ std::vector<RouteStep> collapseTurns(std::vector<RouteStep> steps)
 // usually not be as relevant.
 void trimShortSegments(std::vector<RouteStep> &steps, LegGeometry &geometry)
 {
-    print(steps);
     if (steps.size() < 2 || geometry.locations.size() <= 2)
         return;
 

@@ -57,11 +57,16 @@ class TurnLaneMatcher
     bool isSimpleIntersection(const LaneDataVector &turn_lane_data,
                               const Intersection &intersection) const;
 
+    LaneDataVector findRelevantLaneData(const NodeID at, const Intersection &intersection);
+    LaneDataVector trimToRelevantLaneData(const LaneDataVector &turn_lane_data,
+                                          const Intersection &intersection) const;
+
     LaneDataVector handleNoneValueAtSimpleTurn(const NodeID at,
                                                LaneDataVector lane_data,
                                                const Intersection &intersection) const;
 
     Intersection simpleMatchTuplesToTurns(Intersection intersection,
+                                          const LaneID num_lanes,
                                           const LaneDataVector &lane_data) const;
 };
 

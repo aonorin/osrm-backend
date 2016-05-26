@@ -5,6 +5,7 @@
 #include <iomanip>
 
 #include <boost/algorithm/string/predicate.hpp>
+#include <boost/numeric/conversion/cast.hpp>
 
 namespace osrm
 {
@@ -108,13 +109,15 @@ Intersection TurnLaneMatcher::assignTurnLanes(const EdgeID via_edge,
         } while (!lane.empty());
     };
 
-    auto lane_data = [&](std::string lane_string) {
+    // FIXME this is a workaround due to https://github.com/cucumber/cucumber-js/issues/417,
+    // need to switch statements when fixed
+    // const auto num_lanes = std::count(turn_lane_string.begin(), turn_lane_string.end(), '|') + 1;
+    const LaneID num_lanes = boost::numeric_cast<LaneID>(
+        std::count(turn_lane_string.begin(), turn_lane_string.end(), '|') + 1 +
+        std::count(turn_lane_string.begin(), turn_lane_string.end(), '&'));
+
+    auto lane_data = [&](const LaneID num_lanes, std::string lane_string) {
         LaneMap lane_map;
-        // FIXME this is a workaround due to https://github.com/cucumber/cucumber-js/issues/417,
-        // need to switch statements when fixed
-        // const auto num_lanes = std::count(lane_string.begin(), lane_string.end(), '|') + 1;
-        const auto num_lanes = std::count(lane_string.begin(), lane_string.end(), '|') + 1 +
-                               std::count(lane_string.begin(), lane_string.end(), '&');
         LaneID lane_nr = 0;
         do
         {
@@ -135,7 +138,7 @@ Intersection TurnLaneMatcher::assignTurnLanes(const EdgeID via_edge,
         std::sort(lane_data.begin(), lane_data.end());
 
         return lane_data;
-    }(turn_lane_string);
+    }(num_lanes, turn_lane_string);
 
     // might be reasonable to handle multiple turns, if we know of a sequence of lanes
     // e.g. one direction per lane, if three lanes and right, through, left available
@@ -159,7 +162,7 @@ Intersection TurnLaneMatcher::assignTurnLanes(const EdgeID via_edge,
     {
         lane_data = handleNoneValueAtSimpleTurn(node_based_graph.GetTarget(via_edge),
                                                 std::move(lane_data), intersection);
-        return simpleMatchTuplesToTurns(std::move(intersection), lane_data);
+        return simpleMatchTuplesToTurns(std::move(intersection), num_lanes, lane_data);
     }
     else
     {
@@ -586,7 +589,37 @@ bool TurnLaneMatcher::isSimpleIntersection(const LaneDataVector &lane_data,
     return false;
 }
 
+LaneDataVector TurnLaneMatchertrimToRelevantLaneData(const LaneDataVector &turn_lane_data,
+                                                     const Intersection &intersection) const
+{
+    BOOST_ASSERT(turn_lane_data.size() >
+                 std::count_if(intersection.begin(), intersection.end(),
+                               [](const ConnectedRoad &road) { return road.entry_allowed; }));
+
+    /*
+     * Segregated Intersections can provide turn lanes for turns that are not yet possible.
+     * The straightforward example would be coming up to the following situation:
+     *         (1)            (2)
+     *        | A |          | A |
+     *        | | |          | ^ |
+     *        | v |          | | |
+     * -------    -----------     ------
+     *  B ->-^                        B
+     * -------    -----------     ------
+     *  B ->-v                        B
+     * ------     -----------     ------
+     *       | A |           | A |
+     *
+     * Traveling on road B, we have to pass A at (1) to turn left onto A at (2). The turn
+     * lane itself may only be specified prior to (1) and/or could be repeated between (1)
+     * and (2). To make sure to announce the lane correctly, we need to treat the (in this
+     * case left) turn lane as if it were to continue straight onto the intersection and
+     * look back between (1) and (2) to make sure we find the correct lane for the left-turn.
+     */
+}
+
 Intersection TurnLaneMatcher::simpleMatchTuplesToTurns(Intersection intersection,
+                                                       const LaneID num_lanes,
                                                        const LaneDataVector &lane_data) const
 {
     const auto possible_entries =
@@ -613,7 +646,10 @@ Intersection TurnLaneMatcher::simpleMatchTuplesToTurns(Intersection intersection
             intersection[road_index].turn.instruction.lane_tupel = {
                 LaneID(lane_data[valid_turn].to - lane_data[valid_turn].from + 1),
                 lane_data[valid_turn].from};
-            if (TurnType::Suppressed == intersection[road_index].turn.instruction.type)
+            const bool uses_all_lanes =
+                lane_data[valid_turn].to - lane_data[valid_turn].from + 1 == num_lanes;
+            if (TurnType::Suppressed == intersection[road_index].turn.instruction.type &&
+                !uses_all_lanes)
                 intersection[road_index].turn.instruction.type = TurnType::UseLane;
             std::cout << "Assigned: " << lane_data[valid_turn].tag << " to "
                       << toString(intersection[road_index]) << std::endl;

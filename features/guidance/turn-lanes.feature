@@ -3,7 +3,7 @@ Feature: Turn Lane Guidance
 
     Background:
         Given the profile "car"
-        Given a grid size of 50 meters
+        Given a grid size of 30 meters
 
     #requires https://github.com/cucumber/cucumber-js/issues/417
     #Due to this, we use & as a pipe character. Switch them out for \| when 417 is fixed
@@ -110,47 +110,46 @@ Feature: Turn Lane Guidance
     @TODO @WORKAROUND-FIXME
     Scenario: Turn Lanes at Segregated Road
         Given the node map
-            |   |   | i |   | l |   |   |
-            |   |   |   |   |   |   |   |
-            | h |   | g |   | f |   | e |
-            |   |   |   |   |   |   |   |
-            | a |   | b |   | c |   | d |
-            |   |   |   |   |   |   |   |
-            |   |   | j |   | k |   |   |
+            |   |   | i | l |   |   |
+            |   |   |   |   |   |   |
+            | h |   | g | f |   | e |
+            | a |   | b | c |   | d |
+            |   |   |   |   |   |   |
+            |   |   | j | k |   |   |
 
         And the ways
-            | nodes | name  | turn:lanes:forward  | oneway |
-            | ab    | road  | left\|through&right | yes    |
-            | bc    | road  | left\|through       | yes    |
-            | cd    | road  |                     | yes    |
-            | ef    | road  | \|through&right     | yes    |
-            | fg    | road  | left\|through       | yes    |
-            | gh    | road  |                     | yes    |
-            | ig    | cross |                     | yes    |
-            | gb    | cross | through\|left       | yes    |
-            | bj    | cross |                     | yes    |
-            | kc    | cross | left\|through;right | yes    |
-            | cf    | cross | left\|through       | yes    |
-            | fl    | cross |                     | yes    |
+            | nodes | name  | turn:lanes:forward      | oneway |
+            | ab    | road  | left\|through&right     | yes    |
+            | bc    | road  | left\|through           | yes    |
+            | cd    | road  |                         | yes    |
+            | ef    | road  | \|through&through;right | yes    |
+            | fg    | road  | left;through\|through&  | yes    |
+            | gh    | road  |                         | yes    |
+            | ig    | cross |                         | yes    |
+            | gb    | cross | through\|left           | yes    |
+            | bj    | cross |                         | yes    |
+            | kc    | cross | left\|through;right     | yes    |
+            | cf    | cross | left\|through           | yes    |
+            | fl    | cross |                         | yes    |
 
         When I route I should get
-            | waypoints | route             | turns                        | lanes |
-            | a,j       | road,cross,cross  | depart,turn right,arrive     | |
-            | a,d       | road,road         | depart,arrive                | |
-            | a,l       | road,cross,cross  | depart,turn left,arrive      | |
-            | a,h       | road,road,road    | depart,continue uturn,arrive | |
-            | k,d       | cross,road,road   | depart,turn right,arrive     | |
-            | k,l       | cross,cross       | depart,arrive                | |
-            | k,h       | cross,road,road   | depart,turn left,arrive      | |
-            | k,j       | cross,cross,cross | depart,continue uturn,arrive | |
-            | e,l       | road,cross,cross  | depart,turn right,arrive     | |
-            | e,h       | road,road         | depart,arrive                | |
-            | e,j       | road,cross,cross  | depart,turn left,arrive      | |
-            | e,d       | road,road,road    | depart,continue uturn,arrive | |
-            | i,h       | cross,road,road   | depart,turn right,arrive     | |
-            | i,j       | cross,cross       | depart,arrive                | |
-            | i,d       | cross,road,road   | depart,turn left,arrive      | |
-            | i,l       | cross,cross,cross | depart,continue uturn,arrive | |
+            | waypoints | route             | turns                           | lanes |
+            | a,j       | road,cross,cross  | depart,turn right,arrive        | ,0,   |
+            | a,d       | road,road,road    | depart,use lane straight,arrive | ,1,   |
+            | a,l       | road,cross,cross  | depart,turn left,arrive         | ,2,   |
+            | a,h       | road,road,road    | depart,continue uturn,arrive    | ,2,   |
+            | k,d       | cross,road,road   | depart,turn right,arrive        | ,0,   |
+            | k,l       | cross,cross,cross | depart,use lane straight,arrive | ,0,   |
+            | k,h       | cross,road,road   | depart,turn left,arrive         | ,1,   |
+            | k,j       | cross,cross,cross | depart,continue uturn,arrive    | ,1,   |
+            | e,l       | road,cross,cross  | depart,turn right,arrive        | ,0,   |
+            | e,h       | road,road         | depart,arrive                   | ,     |
+            | e,j       | road,cross,cross  | depart,turn left,arrive         | ,2,   |
+            | e,d       | road,road,road    | depart,continue uturn,arrive    | ,2,   |
+            | i,h       | cross,road,road   | depart,turn right,arrive        | ,,    |
+            | i,j       | cross,cross,cross | depart,use lane straight,arrive | ,0,   |
+            | i,d       | cross,road,road   | depart,turn left,arrive         | ,1,   |
+            | i,l       | cross,cross,cross | depart,continue uturn,arrive    | ,1,   |
 
 
     #this can happen due to traffic lights / lanes not drawn up to the intersection itself
@@ -194,3 +193,84 @@ Feature: Turn Lane Guidance
             | i,j       | road,first-turn,first-turn   | depart,turn left,arrive         | ,1,   |
             | i,a       | road,road,road               | depart,use lane straight,arrive | ,0,   |
 
+    Scenario: Turn Lanes at Segregated Road
+        Given the node map
+            |   |   | i | l |   |   |
+            |   |   |   |   |   |   |
+            | h |   | g | f |   | e |
+            | a |   | b | c |   | d |
+            |   |   |   |   |   |   |
+            |   |   | j | k |   |   |
+
+        And the ways
+            | nodes | name  | turn:lanes:forward      | oneway |
+            | ab    | road  | left\|through&right     | yes    |
+            | bc    | road  | left\|through           | yes    |
+            | cd    | road  |                         | yes    |
+            | ef    | road  | \|through&through;right | yes    |
+            | fg    | road  | left;through\|through&  | yes    |
+            | gh    | road  |                         | yes    |
+            | ig    | cross |                         | yes    |
+            | gb    | cross | through\|left           | yes    |
+            | bj    | cross |                         | yes    |
+            | kc    | cross | left\|through;right     | yes    |
+            | cf    | cross | left\|through           | yes    |
+            | fl    | cross |                         | yes    |
+
+        When I route I should get
+            | waypoints | route             | turns                           | lanes |
+            | i,l       | cross,cross,cross | depart,continue uturn,arrive    | ,1,   |
+
+    Scenario: Passing a one-way street
+        Given the node map
+            | e |   |   | f |   |
+            | a |   | b | c | d |
+
+        And the ways
+            | nodes | name | turn:lanes:forward | oneway |
+            | ab    | road | left\|through      | no     |
+            | bcd   | road |                    | no     |
+            | eb    | owi  |                    | yes    |
+            | cf    | turn |                    |        |
+
+        When I route I should get
+            | waypoints | route          | turns                   | lanes |
+            | a,f       | road,turn,turn | depart,turn left,arrive | ,1,   |
+
+    Scenario: Passing a one-way street, partly pulled back lanes
+        Given the node map
+            | e |   |   | f |   |
+            | a |   | b | c | d |
+            |   |   | g |   |   |
+
+        And the ways
+            | nodes | name  | turn:lanes:forward  | oneway |
+            | ab    | road  | left\|through;right | no     |
+            | bcd   | road  |                     | no     |
+            | eb    | owi   |                     | yes    |
+            | cf    | turn  |                     | no     |
+            | bg    | right |                     | no     |
+
+        When I route I should get
+            | waypoints | route            | turns                    | lanes |
+            | a,f       | road,turn,turn   | depart,turn left,arrive  | ,1,   |
+            | a,g       | road,right,right | depart,turn right,arrive | ,0,   |
+
+    Scenario: Passing a one-way street, partly pulled back lanes, no through
+        Given the node map
+            | e |   |   | f |
+            | a |   | b | c |
+            |   |   | g |   |
+
+        And the ways
+            | nodes | name  | turn:lanes:forward  | oneway |
+            | ab    | road  | left\|right         | no     |
+            | bc    | road  |                     | no     |
+            | eb    | owi   |                     | yes    |
+            | cf    | turn  |                     | no     |
+            | bg    | right |                     | no     |
+
+        When I route I should get
+            | waypoints | route            | turns                    | lanes |
+            | a,f       | road,turn,turn   | depart,turn left,arrive  | ,1,   |
+            | a,g       | road,right,right | depart,turn right,arrive | ,0,   |
