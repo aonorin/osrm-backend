@@ -24,7 +24,6 @@ void GraphCompressor::Compress(const std::unordered_set<NodeID> &barrier_nodes,
 
     util::Percent progress(original_number_of_nodes);
 
-    std::cout << "Compressing graph" << std::endl;
     for (const NodeID node_v : util::irange(0u, original_number_of_nodes))
     {
         progress.PrintStatus(node_v);
@@ -168,19 +167,11 @@ void GraphCompressor::Compress(const std::unordered_set<NodeID> &barrier_nodes,
                 // During contraction, we keep only one of the tags. Usually the one closer to the
                 // intersection is preferred. If its empty, however, we keep the non-empty one
                 if (back == INVALID_LANEID)
-                {
-                    std::cout << "IDs: " << (int)front << " " << (int)back << " To: " << (int)front
-                              << std::endl;
                     return front;
-                }
-                std::cout << "IDs: " << (int)front << " " << (int)back << " To: " << (int)back
-                          << std::endl;
                 return back;
             };
-            std::cout << "Forward ";
             graph.GetEdgeData(forward_e1).lane_id =
                 selectLaneID(graph.GetEdgeData(forward_e1).lane_id, fwd_edge_data2.lane_id);
-            std::cout << "Backward ";
             graph.GetEdgeData(reverse_e1).lane_id =
                 selectLaneID(graph.GetEdgeData(reverse_e1).lane_id, rev_edge_data2.lane_id);
 

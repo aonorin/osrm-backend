@@ -22,8 +22,9 @@ DirectionModifier::Enum getMatchingModifier(const std::string &tag)
     const constexpr char *tag_by_modifier[] = {"reverse",    "sharp_right", "right", "slight_right",
                                                "through",    "slight_left", "left",  "sharp_left",
                                                "merge_left", "merge_right"};
+    std::cout << "Tag: " << tag << std::endl;
     const auto index =
-        std::distance(tag_by_modifier, std::find(tag_by_modifier, tag_by_modifier + 11, tag));
+        std::distance(tag_by_modifier, std::find(tag_by_modifier, tag_by_modifier + 10, tag));
 
     const constexpr DirectionModifier::Enum modifiers[] = {
         DirectionModifier::UTurn,      DirectionModifier::SharpRight,
@@ -32,7 +33,7 @@ DirectionModifier::Enum getMatchingModifier(const std::string &tag)
         DirectionModifier::Left,       DirectionModifier::SharpLeft,
         DirectionModifier::SlightLeft, DirectionModifier::SlightRight};
 
-    BOOST_ASSERT(index < 11);
+    BOOST_ASSERT(index < 10);
     return modifiers[index];
 }
 
@@ -63,8 +64,8 @@ bool TurnLaneMatcher::TurnLaneData::operator<(const TurnLaneMatcher::TurnLaneDat
 
     const constexpr char *tag_by_modifier[] = {"reverse", "sharp_right", "right", "slight_right",
                                                "through", "slight_left", "left",  "sharp_left"};
-    return std::find(tag_by_modifier, tag_by_modifier + 9, this->tag) <
-           std::find(tag_by_modifier, tag_by_modifier + 9, other.tag);
+    return std::find(tag_by_modifier, tag_by_modifier + 8, this->tag) <
+           std::find(tag_by_modifier, tag_by_modifier + 8, other.tag);
 }
 
 TurnLaneMatcher::TurnLaneMatcher(const util::NodeBasedDynamicGraph &node_based_graph,
@@ -336,7 +337,7 @@ TurnLaneMatcher::LaneDataVector TurnLaneMatcher::handleNoneValueAtSimpleTurn(
     {
         if (lane_data[index].tag == "none")
         {
-            bool print = false;
+            bool print = true;
             // we have to create multiple turns
             if (connection_count > lane_data.size())
             {
@@ -482,12 +483,16 @@ TurnLaneMatcher::LaneDataVector TurnLaneMatcher::handleNoneValueAtSimpleTurn(
                             lane_data[index].to = lane_data[index].from;
                         }
                     }
+                    else if (has_through &&
+                             (lane_data.size() == 1 || lane_data[index + 1].tag != "through"))
+                    {
+                        lane_data[index].tag = "through";
+                    }
                 }
                 else if (index + 1 == lane_data.size())
                 {
-                    if (has_left &&
-                        (lane_data.size() == 1 || (lane_data[index - 1].tag != "sharp_left" &&
-                                                   lane_data[index - 1].tag != "left")))
+                    if (has_left && ((lane_data[index - 1].tag != "sharp_left" &&
+                                      lane_data[index - 1].tag != "left")))
                     {
                         lane_data[index].tag = "left";
                         if (lane_data[index - 1].tag == "through")
@@ -496,6 +501,10 @@ TurnLaneMatcher::LaneDataVector TurnLaneMatcher::handleNoneValueAtSimpleTurn(
                             // turning left through a possible through lane is not possible
                             lane_data[index].from = lane_data[index].to;
                         }
+                    }
+                    else if (has_through && lane_data[index - 1].tag != "through")
+                    {
+                        lane_data[index].tag = "through";
                     }
                 }
                 else
@@ -523,8 +532,8 @@ TurnLaneMatcher::LaneDataVector TurnLaneMatcher::handleNoneValueAtSimpleTurn(
 
                 std::cout << "Output" << std::endl;
                 for (auto tag : lane_data)
-                    std::cout << "Lane Information: " << tag.tag << " " << tag.from << "-" << tag.to
-                              << std::endl;
+                    std::cout << "Lane Information: " << tag.tag << " " << (int)tag.from << "-"
+                              << (int)tag.to << std::endl;
 
                 for (const auto &turn : intersection)
                 {
@@ -663,6 +672,10 @@ Intersection TurnLaneMatcher::simpleMatchTuplesToTurns(Intersection intersection
     const auto possible_entries =
         std::count_if(intersection.begin(), intersection.end(),
                       [](const ConnectedRoad &road) { return road.entry_allowed; });
+
+    for (auto entry : lane_data)
+        if (entry.tag == "none")
+            return intersection;
 
     // Needs to handle u-turn edge, sort lanes accordingly
     std::cout << "Lane Data: " << lane_data.size() << " "
