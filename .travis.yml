@@ -149,8 +149,8 @@ install:
     fi
   - popd
   - mkdir example/build && pushd example/build
-  - cmake ..
-  - make
+  - cmake .. -DCMAKE_BUILD_TYPE=${BUILD_TYPE}
+  - make VERBOSE=1
   - popd
 
 script:

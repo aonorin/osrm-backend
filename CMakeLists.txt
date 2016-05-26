@@ -11,6 +11,22 @@ set(OSRM_VERSION_MAJOR 5)
 set(OSRM_VERSION_MINOR 2)
 set(OSRM_VERSION_PATCH 0)
 
+# these two functions build up custom variables:
+#   OSRM_INCLUDE_PATHS and OSRM_DEFINES
+# These variables we want to pass to
+# include_directories and add_definitions for both
+# this build and for sharing externally via pkg-config
+
+function(add_includes includes)
+  list(APPEND OSRM_INCLUDE_PATHS "${includes}")
+  set(OSRM_INCLUDE_PATHS "${OSRM_INCLUDE_PATHS}" PARENT_SCOPE)
+endfunction(add_includes)
+
+function(add_defines defines)
+  list(APPEND OSRM_DEFINES "${defines}")
+  set(OSRM_DEFINES "${OSRM_DEFINES}" PARENT_SCOPE)
+endfunction(add_defines)
+
 set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
 include(CheckCXXCompilerFlag)
 include(FindPackageHandleStandardArgs)
@@ -163,7 +179,7 @@ elseif(${CMAKE_CXX_COMPILER_ID} STREQUAL "GNU")
   # using GCC
   set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wall -Wextra -pedantic -Wuninitialized -Wunreachable-code -Wstrict-overflow=1 -D_FORTIFY_SOURCE=2 ${COLOR_FLAG} -fPIC")
   if(WIN32) # using mingw
-    add_definitions(-DWIN32)
+    add_defines(-DWIN32)
     set(OPTIONAL_SOCKET_LIBS ws2_32 wsock32)
   endif()
 elseif(${CMAKE_CXX_COMPILER_ID} STREQUAL "Intel")
@@ -172,12 +188,12 @@ elseif(${CMAKE_CXX_COMPILER_ID} STREQUAL "Intel")
 elseif(${CMAKE_CXX_COMPILER_ID} STREQUAL "MSVC")
   # using Visual Studio C++
   set(BOOST_COMPONENTS ${BOOST_COMPONENTS} date_time chrono zlib)
-  add_definitions(-DBOOST_LIB_DIAGNOSTIC)
-  add_definitions(-D_CRT_SECURE_NO_WARNINGS)
-  add_definitions(-DNOMINMAX) # avoid min and max macros that can break compilation
-  add_definitions(-D_USE_MATH_DEFINES) #needed for M_PI with cmath.h
-  add_definitions(-D_WIN32_WINNT=0x0501)
-  add_definitions(-DXML_STATIC)
+  add_defines(-DBOOST_LIB_DIAGNOSTIC)
+  add_defines(-D_CRT_SECURE_NO_WARNINGS)
+  add_defines(-DNOMINMAX) # avoid min and max macros that can break compilation
+  add_defines(-D_USE_MATH_DEFINES) #needed for M_PI with cmath.h
+  add_defines(-D_WIN32_WINNT=0x0501)
+  add_defines(-DXML_STATIC)
   find_library(ws2_32_LIBRARY_PATH ws2_32)
   target_link_libraries(osrm-extract wsock32 ws2_32)
 endif()
@@ -204,7 +220,7 @@ set(CMAKE_MODULE_LINKER_FLAGS "${CMAKE_MODULE_LINKER_FLAGS} ${LINKER_FLAGS}")
 
 # Activate C++11
 if(NOT ${CMAKE_CXX_COMPILER_ID} STREQUAL "MSVC")
-  set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++11 ")
+  set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++11")
 endif()
 
 # Configuring other platform dependencies
@@ -229,41 +245,41 @@ endif()
 list(APPEND CMAKE_MODULE_PATH "${CMAKE_CURRENT_SOURCE_DIR}/third_party/libosmium/cmake")
 set(OSMIUM_INCLUDE_DIR "${CMAKE_CURRENT_SOURCE_DIR}/third_party/libosmium/include")
 find_package(Osmium REQUIRED COMPONENTS io)
-include_directories(SYSTEM ${OSMIUM_INCLUDE_DIRS})
+add_includes(${OSMIUM_INCLUDE_DIR})
 
 
 find_package(Boost 1.49.0 REQUIRED COMPONENTS ${BOOST_COMPONENTS})
 if(NOT WIN32 AND NOT Boost_USE_STATIC_LIBS)
-  add_definitions(-DBOOST_TEST_DYN_LINK)
+  add_defines(-DBOOST_TEST_DYN_LINK)
 endif()
-add_definitions(-DBOOST_SPIRIT_USE_PHOENIX_V3)
-add_definitions(-DBOOST_RESULT_OF_USE_DECLTYPE)
-add_definitions(-DBOOST_FILESYSTEM_NO_DEPRECATED)
-include_directories(SYSTEM ${Boost_INCLUDE_DIRS})
+add_defines(-DBOOST_SPIRIT_USE_PHOENIX_V3)
+add_defines(-DBOOST_RESULT_OF_USE_DECLTYPE)
+add_defines(-DBOOST_FILESYSTEM_NO_DEPRECATED)
+add_includes(${Boost_INCLUDE_DIRS})
 
 find_package(Threads REQUIRED)
 
 find_package(TBB REQUIRED)
-include_directories(SYSTEM ${TBB_INCLUDE_DIR})
+add_includes(${TBB_INCLUDE_DIR})
 if(WIN32 AND CMAKE_BUILD_TYPE MATCHES Debug)
   set(TBB_LIBRARIES ${TBB_DEBUG_LIBRARIES})
 endif()
 
 find_package(Luabind REQUIRED)
 include(check_luabind)
-include_directories(SYSTEM ${LUABIND_INCLUDE_DIR})
+add_includes(${LUABIND_INCLUDE_DIR})
 
 set(USED_LUA_LIBRARIES ${LUA_LIBRARY})
 if(LUAJIT_FOUND)
   set(USED_LUA_LIBRARIES, LUAJIT_LIBRARIES)
 endif()
-include_directories(SYSTEM ${LUA_INCLUDE_DIR})
+add_includes(${LUA_INCLUDE_DIR})
 
 find_package(EXPAT REQUIRED)
-include_directories(SYSTEM ${EXPAT_INCLUDE_DIRS})
+add_includes(${EXPAT_INCLUDE_DIRS})
 
 find_package(STXXL REQUIRED)
-include_directories(SYSTEM ${STXXL_INCLUDE_DIR})
+add_includes(${STXXL_INCLUDE_DIR})
 
 set(OpenMP_FIND_QUIETLY ON)
 find_package(OpenMP)
@@ -273,15 +289,18 @@ if(OPENMP_FOUND)
 endif()
 
 find_package(BZip2 REQUIRED)
-include_directories(SYSTEM ${BZIP_INCLUDE_DIRS})
+add_includes(${BZIP2_INCLUDE_DIR})
 
 find_package(ZLIB REQUIRED)
-include_directories(SYSTEM ${ZLIB_INCLUDE_DIRS})
+add_includes(${ZLIB_INCLUDE_DIRS})
 
 if (ENABLE_JSON_LOGGING)
   message(STATUS "Enabling json logging")
-  add_definitions(-DENABLE_JSON_LOGGING)
+  add_defines(-DENABLE_JSON_LOGGING)
 endif()
+
+add_definitions(${OSRM_DEFINES})
+include_directories(SYSTEM ${OSRM_INCLUDE_PATHS})
 
 # Binaries
 target_link_libraries(osrm-datastore osrm_store ${Boost_LIBRARIES})
@@ -413,13 +432,22 @@ foreach(lib ${ENGINE_LIBRARIES})
   set(ENGINE_LIBRARY_LISTING "${ENGINE_LIBRARY_LISTING} -L${ENGINE_LIBRARY_PATH} -l${ENGINE_LIBRARY_NAME}")
 endforeach()
 
-configure_file(${CMAKE_CURRENT_SOURCE_DIR}/cmake/pkgconfig.in libosrm.pc @ONLY)
-install(FILES ${PROJECT_BINARY_DIR}/libosrm.pc DESTINATION lib/pkgconfig)
-
 if(BUILD_DEBIAN_PACKAGE)
   include(CPackDebianConfig)
   include(CPack)
 endif()
+
+function(JOIN VALUES GLUE OUTPUT)
+  string (REPLACE ";" "${GLUE}" _TMP_STR "${VALUES}")
+  set (${OUTPUT} "${_TMP_STR}" PARENT_SCOPE)
+endfunction()
+
+# Set up variables, then write to pkgconfig file
+JOIN("${OSRM_DEFINES}" " " OSRM_DEFINES_STRING)
+JOIN("-I${OSRM_INCLUDE_PATHS}" " -I" OSRM_INCLUDE_PATHS_STRING)
+
+configure_file(${CMAKE_CURRENT_SOURCE_DIR}/cmake/pkgconfig.in libosrm.pc @ONLY)
+install(FILES ${PROJECT_BINARY_DIR}/libosrm.pc DESTINATION lib/pkgconfig)
 
 # add a target to generate API documentation with Doxygen
 find_package(Doxygen)
